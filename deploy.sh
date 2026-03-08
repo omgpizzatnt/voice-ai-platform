@@ -24,7 +24,7 @@ mkdir -p /workspace/GPT-SoVITS
 mkdir -p /workspace/RVC
 mkdir -p /var/log/supervisor
 
-if [ ! -f "/workspace/GPT-SoVITS/api.py" ]; then
+if [ ! -f "/workspace/GPT-SoVITS/api_v2.py" ]; then
     echo "Installing GPT-SoVITS..."
     cd /workspace
     
