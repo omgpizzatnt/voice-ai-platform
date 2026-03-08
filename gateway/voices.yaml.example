@@ -1,0 +1,38 @@
+voices:
+  # Default TTS voice example
+  default:
+    name: "Default Voice"
+    type: tts
+    model_name: "default"
+    refer_wav_path: "/workspace/models/custom_voices/default/reference.wav"
+    prompt_text: "参考音频对应的文本内容"
+    prompt_lang: "zh"
+    language: "auto"
+    top_k: 20
+    top_p: 0.6
+    temperature: 0.6
+    speed: 1.0
+  
+  # Example Chinese voice
+  xiaoming:
+    name: "小明"
+    type: tts
+    model_name: "xiaoming"
+    refer_wav_path: "/workspace/models/custom_voices/xiaoming/ref.wav"
+    prompt_text: "这是一段参考音频的文本内容"
+    prompt_lang: "zh"
+    language: "zh"
+    top_k: 20
+    top_p: 0.6
+    temperature: 0.6
+    speed: 1.0
+  
+  # Example RVC Pipeline
+  anime_girl:
+    name: "动漫女声"
+    type: rvc_pipeline
+    base_tts_voice: "default"
+    rvc_model_path: "/workspace/models/rvc_pipelines/anime_girl/"
+    pitch: 6
+    f0_method: "rmvpe"
+    index_rate: 0.75

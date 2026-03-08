@@ -1,0 +1,122 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Models and large files
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.bin
+*.onnx
+
+# Audio files (user uploaded/generated)
+*.wav
+*.mp3
+*.ogg
+*.flac
+*.aac
+*.pcm
+
+# Logs
+*.log
+logs/
+
+# Docker
+.dockerignore
+
+# GitHub Actions
+!.github/
+
+# Supervisor
+*.pid
+*.sock
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Model directories (user data)
+models/custom_voices/*
+models/rvc_pipelines/*
+!models/custom_voices/.gitkeep
+!models/rvc_pipelines/.gitkeep
+
+# GPT-SoVITS and RVC (cloned at runtime)
+GPT-SoVITS/
+RVC/
+
+# Config files with secrets (keep templates)
+gateway/api_keys.yaml
+!gateway/api_keys.yaml.example
+gateway/voices.yaml
+!gateway/voices.yaml.example
+
+# AI Agent
+.sisyphus/
+AGENTS.md
+GITHUB_DOCKER_GUIDE.md
