@@ -106,10 +106,6 @@ models/rvc_pipelines/*
 !models/custom_voices/.gitkeep
 !models/rvc_pipelines/.gitkeep
 
-# GPT-SoVITS and RVC (cloned at runtime)
-GPT-SoVITS/
-RVC/
-
 # Config files with secrets (keep templates)
 gateway/api_keys.yaml
 !gateway/api_keys.yaml.example

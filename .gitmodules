@@ -1,0 +1,6 @@
+[submodule "GPT-SoVITS"]
+	path = GPT-SoVITS
+	url = https://github.com/RVC-Boss/GPT-SoVITS.git
+[submodule "RVC"]
+	path = RVC
+	url = https://github.com/omgpizzatnt/Retrieval-based-Voice-Conversion-API.git
