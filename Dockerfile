@@ -24,18 +24,19 @@ COPY deploy.sh /workspace/
 RUN chmod +x /workspace/deploy.sh
 
 COPY GPT-SoVITS/ /workspace/GPT-SoVITS/
+COPY RVC/ /workspace/RVC/
 
-RUN mkdir -p /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/s1 \
-    /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/s2
+RUN mkdir -p /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models \
+    /workspace/GPT-SoVITS/GPT_SoVITS/text/G2PWModel \
+    /workspace/RVC/assets/hubert \
+    /workspace/RVC/assets/rmvpe
 
-COPY models/gptsovits_assets/s1/ /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/s1/
-COPY models/gptsovits_assets/s2/ /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/s2/
+COPY models/gptsovits_assets/ /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/
+COPY models/g2pwmodel/ /workspace/GPT-SoVITS/GPT_SoVITS/text/G2PWModel/
+COPY models/rvc_assets/ /workspace/RVC/assets/
 
 RUN python -m venv /workspace/venvs/gpt-sovits --system-site-packages && \
     /workspace/venvs/gpt-sovits/bin/pip install --no-cache-dir -r /workspace/GPT-SoVITS/requirements.txt
-
-COPY RVC/ /workspace/RVC/
-COPY models/rvc_assets/ /workspace/RVC/assets/
 
 RUN python3.9 -m venv /workspace/venvs/rvc && \
     /workspace/venvs/rvc/bin/python -m pip install pip==24.0 && \

@@ -90,14 +90,21 @@ Before building, you need to prepare the following:
    bash download_models.sh
    ```
 
-   **RVC Models** (~700MB):
-   - `models/rvc_assets/hubert/hubert_base.pt` (181MB)
-   - `models/rvc_assets/rmvpe/rmvpe.pt` (173MB)
-   - `models/rvc_assets/rmvpe/rmvpe.onnx` (345MB)
+   **RVC Models** (~350MB required, ~700MB with optional):
+   - `models/rvc_assets/hubert/hubert_base.pt` (181MB, required)
+   - `models/rvc_assets/rmvpe/rmvpe.pt` (173MB, required)
+   - `models/rvc_assets/rmvpe/rmvpe.onnx` (345MB, optional for AMD/Intel GPU)
 
-   **GPT-SoVITS Models** (~2.5GB):
-   - `models/gptsovits_assets/s1/s1bert.ckpt` (~2GB, Step 1: GPT model)
-   - `models/gptsovits_assets/s2/s2G.pth` (~400MB, Step 2: SoVITS model)
+   **GPT-SoVITS Models** (~5GB total):
+   - Pretrained models (~4.5GB, from `pretrained_models.zip`):
+     - Step 1 v1: `s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt` (~155MB)
+     - Step 1 v3: `s1v3.ckpt` (~155MB)
+     - Step 2 v1/v2: `s2G488k.pth` (~106MB), `s2D488k.pth` (~94MB)
+     - Step 2 v3: `s2Gv3.pth` (~769MB)
+     - Encoders: `chinese-hubert-base/`, `chinese-roberta-wwm-ext-large/`
+     - Other variants: `gsv-v2final-pretrained/`, `gsv-v4-pretrained/`, `v2Pro/`, `sv/`
+   - G2PWModel (~562MB, from `G2PWModel.zip`):
+     - `models/g2pwmodel/g2pW.onnx` for Chinese TTS inference
 
    See `MODELS_DOWNLOAD.md` for manual download instructions and alternative mirrors.
 
@@ -136,12 +143,21 @@ voice-ai-platform/
 │   │   │   └── hubert_base.pt
 │   │   └── rmvpe/
 │   │       ├── rmvpe.pt
-│   │       └── rmvpe.onnx
-│   └── gptsovits_assets/     # GPT-SoVITS pretrained models
-│       ├── s1/
-│       │   └── s1bert.ckpt   # Step 1: GPT model
-│       └── s2/
-│           └── s2G.pth       # Step 2: SoVITS model
+│   │       └── rmvpe.onnx    # optional for AMD/Intel GPU
+│   ├── gptsovits_assets/     # GPT-SoVITS pretrained models (from pretrained_models.zip)
+│   │   ├── s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt  # Step 1 v1
+│   │   ├── s1v3.ckpt                                        # Step 1 v3
+│   │   ├── s2G488k.pth                                      # Step 2 v1/v2 G
+│   │   ├── s2D488k.pth                                      # Step 2 v1/v2 D
+│   │   ├── s2Gv3.pth                                        # Step 2 v3 G
+│   │   ├── chinese-hubert-base/                             # Content encoder
+│   │   ├── chinese-roberta-wwm-ext-large/                   # Text encoder
+│   │   ├── gsv-v2final-pretrained/                          # v2 final
+│   │   ├── gsv-v4-pretrained/                               # v4
+│   │   ├── v2Pro/                                           # v2Pro
+│   │   └── sv/                                              # Speaker verification
+│   └── g2pwmodel/              # G2PW model for Chinese TTS
+│       └── g2pW.onnx
 ├── Dockerfile
 ├── supervisord.conf
 └── deploy.sh

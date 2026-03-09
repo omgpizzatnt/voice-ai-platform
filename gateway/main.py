@@ -1,7 +1,6 @@
 import os
 import re
 import time
-import yaml
 import asyncio
 import hashlib
 import logging
@@ -15,6 +14,8 @@ import langid
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+
+from yaml_utils import AtomicYAML
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +46,7 @@ class APIKeyEntry:
     created_at: str
     last_used: Optional[str] = None
     active: bool = True
+    _last_persisted: Optional[str] = None
 
 
 @dataclass
@@ -70,9 +72,9 @@ class VoicesRegistry:
             if os.path.exists(VOICES_CONFIG_PATH):
                 mtime = os.path.getmtime(VOICES_CONFIG_PATH)
                 if mtime > self._last_voices_mtime:
-                    async with self._lock:
-                        with open(VOICES_CONFIG_PATH, 'r', encoding='utf-8') as f:
-                            data = yaml.safe_load(f)
+                    data = AtomicYAML.load(VOICES_CONFIG_PATH)
+                    if data:
+                        async with self._lock:
                             self.voices = data.get('voices', {})
                     self._last_voices_mtime = mtime
                     logger.info(f"Loaded {len(self.voices)} voices from config")
@@ -84,14 +86,20 @@ class VoicesRegistry:
             if os.path.exists(API_KEYS_PATH):
                 mtime = os.path.getmtime(API_KEYS_PATH)
                 if mtime > self._last_keys_mtime:
-                    async with self._lock:
-                        with open(API_KEYS_PATH, 'r', encoding='utf-8') as f:
-                            data = yaml.safe_load(f) or {}
-                            keys_data = data.get('api_keys', {})
-                            self.api_keys = {
-                                k: APIKeyEntry(**v) 
-                                for k, v in keys_data.items()
-                            }
+                    data = AtomicYAML.load(API_KEYS_PATH)
+                    if data:
+                        keys_data = data.get('api_keys', {})
+                        async with self._lock:
+                            self.api_keys = {}
+                            for k, v in keys_data.items():
+                                entry = APIKeyEntry(
+                                    key_hash=v.get('key_hash', k),
+                                    created_at=v.get('created_at', ''),
+                                    last_used=v.get('last_used'),
+                                    active=v.get('active', True),
+                                    _last_persisted=v.get('last_used')
+                                )
+                                self.api_keys[k] = entry
                     self._last_keys_mtime = mtime
                     logger.info(f"Loaded {len(self.api_keys)} API keys")
             else:
@@ -104,13 +112,13 @@ class VoicesRegistry:
         self.api_keys[key_hash] = APIKeyEntry(
             key_hash=key_hash,
             created_at=datetime.now().isoformat(),
-            active=True
+            active=True,
+            _last_persisted=datetime.now().isoformat()
         )
-        await self._save_api_keys()
-    
-    async def _save_api_keys(self):
-        try:
-            os.makedirs(os.path.dirname(API_KEYS_PATH), exist_ok=True)
+        await self._persist_api_keys()
+
+    async def _persist_api_keys(self):
+        async with self._lock:
             data = {
                 'api_keys': {
                     k: {
@@ -122,21 +130,32 @@ class VoicesRegistry:
                     for k, v in self.api_keys.items()
                 }
             }
-            with open(API_KEYS_PATH, 'w', encoding='utf-8') as f:
-                yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
-        except Exception as e:
-            logger.error(f"Failed to save API keys: {e}")
+        AtomicYAML.save(API_KEYS_PATH, data)
     
-    def validate_key(self, auth_header: Optional[str]) -> bool:
+    async def validate_key(self, auth_header: Optional[str]) -> bool:
         if not auth_header:
             return False
-        
+
         token = auth_header.replace("Bearer ", "").strip()
         key_hash = hashlib.sha256(token.encode()).hexdigest()[:16]
-        
+
         entry = self.api_keys.get(key_hash)
         if entry and entry.active:
-            entry.last_used = datetime.now().isoformat()
+            now = datetime.now()
+            entry.last_used = now.isoformat()
+
+            should_persist = True
+            if entry._last_persisted:
+                try:
+                    last_dt = datetime.fromisoformat(entry._last_persisted)
+                    if (now - last_dt).total_seconds() < 60:
+                        should_persist = False
+                except ValueError:
+                    pass
+
+            if should_persist:
+                entry._last_persisted = entry.last_used
+                await self._persist_api_keys()
             return True
         return False
     
@@ -302,21 +321,46 @@ async def health_check_loop():
             logger.error(f"Health check error: {e}")
 
 
+async def set_gpt_sovits_model(worker: WorkerState, gpt_weights: str, sovits_weights: str):
+    if gpt_weights:
+        url = f"{GPT_SOVITS_BASE_URL}:{worker.port}/set_gpt_weights"
+        async with worker_pool.session.get(url, params={"weights_path": gpt_weights}) as resp:
+            if resp.status != 200:
+                error_text = await resp.text()
+                logger.warning(f"Failed to set GPT weights on worker {worker.port}: {error_text}")
+
+    if sovits_weights:
+        url = f"{GPT_SOVITS_BASE_URL}:{worker.port}/set_sovits_weights"
+        async with worker_pool.session.get(url, params={"weights_path": sovits_weights}) as resp:
+            if resp.status != 200:
+                error_text = await resp.text()
+                logger.warning(f"Failed to set SoVITS weights on worker {worker.port}: {error_text}")
+
+
 async def call_gpt_sovits(
     worker: WorkerState,
     text: str,
     voice_config: Dict,
     text_lang: str
 ) -> bytes:
-    
+
     refer_wav_path = voice_config.get("refer_wav_path", "")
     prompt_text = voice_config.get("prompt_text", "")
     prompt_lang = voice_config.get("prompt_lang", "auto")
-    
+
     if text_lang == "auto":
         text_lang = LanguageDetector.detect(text)
-    
-    # GPT-SoVITS api.py accepts GET or POST to root endpoint /
+
+    gpt_weights = voice_config.get("gpt_weights", "")
+    sovits_weights = voice_config.get("sovits_weights", "")
+    model_id = f"{gpt_weights}:{sovits_weights}" if (gpt_weights or sovits_weights) else "default"
+
+    if worker.loaded_model != model_id:
+        if gpt_weights or sovits_weights:
+            logger.info(f"Switching worker {worker.port} to model: {model_id}")
+            await set_gpt_sovits_model(worker, gpt_weights, sovits_weights)
+        worker.loaded_model = model_id
+
     params = {
         "refer_wav_path": refer_wav_path,
         "prompt_text": prompt_text,
@@ -326,19 +370,22 @@ async def call_gpt_sovits(
         "top_k": voice_config.get("top_k", 20),
         "top_p": voice_config.get("top_p", 0.6),
         "temperature": voice_config.get("temperature", 0.6),
-        "speed": voice_config.get("speed", 1.0),
+        "speed_factor": voice_config.get("speed", 1.0),
+        "text_split_method": voice_config.get("text_split_method", "cut5"),
+        "batch_size": voice_config.get("batch_size", 1),
+        "sample_steps": voice_config.get("sample_steps", 32),
     }
-    
+
     # Remove empty parameters
-    params = {k: v for k, v in params.items() if v}
-    
-    url = f"{GPT_SOVITS_BASE_URL}:{worker.port}/"
-    
+    params = {k: v for k, v in params.items() if v is not None and v != ""}
+
+    url = f"{GPT_SOVITS_BASE_URL}:{worker.port}/tts"
+
     async with worker_pool.session.get(url, params=params) as resp:
         if resp.status != 200:
             error_text = await resp.text()
             raise HTTPException(status_code=resp.status, detail=f"TTS worker error: {error_text}")
-        
+
         worker.request_count += 1
         return await resp.read()
 
@@ -348,28 +395,31 @@ async def call_rvc(
     audio_data: bytes,
     rvc_config: Dict
 ) -> bytes:
-    
+
     data = aiohttp.FormData()
+    data.add_field('model_name', rvc_config.get('rvc_model_name', ''))
     data.add_field('f0_up_key', str(rvc_config.get('pitch', 0)))
     data.add_field('f0_method', rvc_config.get('f0_method', 'rmvpe'))
     data.add_field('index_rate', str(rvc_config.get('index_rate', 0.75)))
-    data.add_field('protect', '0.33')
-    
+    data.add_field('filter_radius', str(rvc_config.get('filter_radius', 3)))
+    data.add_field('resample_sr', str(rvc_config.get('resample_sr', 0)))
+    data.add_field('rms_mix_rate', str(rvc_config.get('rms_mix_rate', 0.25)))
+    data.add_field('protect', str(rvc_config.get('protect', 0.33)))
+
     data.add_field(
         'input_file',
         audio_data,
         filename='input.wav',
         content_type='audio/wav'
     )
-    
-    # SocAIty RVC FastAPI endpoint
+
     url = f"{RVC_BASE_URL}:{worker.port}/convert"
-    
+
     async with worker_pool.session.post(url, data=data) as resp:
         if resp.status != 200:
             error_text = await resp.text()
             raise HTTPException(status_code=resp.status, detail=f"RVC worker error: {error_text}")
-        
+
         worker.request_count += 1
         return await resp.read()
 
@@ -379,29 +429,33 @@ async def create_speech(
     request: TTSRequest,
     authorization: Optional[str] = Header(None)
 ):
-    if not registry.validate_key(authorization):
+    if not await registry.validate_key(authorization):
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
-    
+
     voice_config = registry.get_voice(request.voice)
     if not voice_config:
         available = list(registry.voices.keys())
         raise HTTPException(
-            status_code=404, 
+            status_code=404,
             detail=f"Voice '{request.voice}' not found. Available: {available}"
         )
-    
+
     voice_type = voice_config.get("type", "tts")
-    
-    text_lang = "auto"
+
+    text_lang = voice_config.get("language", "auto")
     if request.extra_body and "language" in request.extra_body:
         text_lang = request.extra_body["language"]
     
     try:
         if voice_type == "tts":
-            worker = worker_pool.get_gpt_sovits_worker(voice_config.get("model_name"))
+            gpt_weights = voice_config.get("gpt_weights", "")
+            sovits_weights = voice_config.get("sovits_weights", "")
+            model_id = f"{gpt_weights}:{sovits_weights}" if (gpt_weights or sovits_weights) else None
+
+            worker = worker_pool.get_gpt_sovits_worker(model_id)
             if not worker:
                 raise HTTPException(status_code=503, detail="No available TTS workers")
-            
+
             audio_data = await call_gpt_sovits(
                 worker, request.input, voice_config, text_lang
             )
@@ -426,28 +480,37 @@ async def create_speech(
             base_voice = registry.get_voice(base_voice_id)
             if not base_voice:
                 raise HTTPException(
-                    status_code=404, 
+                    status_code=404,
                     detail=f"Base TTS voice '{base_voice_id}' not found"
                 )
-            
-            tts_worker = worker_pool.get_gpt_sovits_worker(base_voice.get("model_name"))
+
+            base_gpt_weights = base_voice.get("gpt_weights", "")
+            base_sovits_weights = base_voice.get("sovits_weights", "")
+            base_model_id = f"{base_gpt_weights}:{base_sovits_weights}" if (base_gpt_weights or base_sovits_weights) else None
+
+            tts_worker = worker_pool.get_gpt_sovits_worker(base_model_id)
             if not tts_worker:
                 raise HTTPException(status_code=503, detail="No available TTS workers")
-            
+
             dry_audio = await call_gpt_sovits(
                 tts_worker, request.input, base_voice, text_lang
             )
-            
+
             rvc_worker = worker_pool.get_rvc_worker()
             if not rvc_worker:
                 raise HTTPException(status_code=503, detail="No available RVC workers")
-            
+
             rvc_config = {
+                "rvc_model_name": voice_config.get("rvc_model_name", ""),
                 "pitch": voice_config.get("pitch", 0),
                 "f0_method": voice_config.get("f0_method", "rmvpe"),
                 "index_rate": voice_config.get("index_rate", 0.75),
+                "filter_radius": voice_config.get("filter_radius", 3),
+                "resample_sr": voice_config.get("resample_sr", 0),
+                "rms_mix_rate": voice_config.get("rms_mix_rate", 0.25),
+                "protect": voice_config.get("protect", 0.33),
             }
-            
+
             converted_audio = await call_rvc(rvc_worker, dry_audio, rvc_config)
             
             return StreamingResponse(
@@ -468,7 +531,7 @@ async def create_speech(
 
 @app.get("/v1/voices")
 async def list_voices(authorization: Optional[str] = Header(None)):
-    if not registry.validate_key(authorization):
+    if not await registry.validate_key(authorization):
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
     
     return {
