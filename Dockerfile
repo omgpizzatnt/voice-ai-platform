@@ -31,8 +31,8 @@ RUN mkdir -p /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models \
     /workspace/RVC/assets/hubert \
     /workspace/RVC/assets/rmvpe
 
-COPY models/gptsovits_assets/ /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/
-COPY models/g2pwmodel/ /workspace/GPT-SoVITS/GPT_SoVITS/text/G2PWModel/
+COPY models/gptsovits_assets/pretrained_models/ /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/
+COPY models/gptsovits_assets/G2PWModel/ /workspace/GPT-SoVITS/GPT_SoVITS/text/G2PWModel/
 COPY models/rvc_assets/ /workspace/RVC/assets/
 
 RUN python -m venv /workspace/venvs/gpt-sovits --system-site-packages && \

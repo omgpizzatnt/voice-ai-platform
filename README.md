@@ -104,7 +104,7 @@ Before building, you need to prepare the following:
      - Encoders: `chinese-hubert-base/`, `chinese-roberta-wwm-ext-large/`
      - Other variants: `gsv-v2final-pretrained/`, `gsv-v4-pretrained/`, `v2Pro/`, `sv/`
    - G2PWModel (~562MB, from `G2PWModel.zip`):
-     - `models/g2pwmodel/g2pW.onnx` for Chinese TTS inference
+     - `models/gptsovits_assets/G2PWModel/g2pW.onnx` for Chinese TTS inference
 
    See `MODELS_DOWNLOAD.md` for manual download instructions and alternative mirrors.
 
@@ -144,20 +144,28 @@ voice-ai-platform/
 │   │   └── rmvpe/
 │   │       ├── rmvpe.pt
 │   │       └── rmvpe.onnx    # optional for AMD/Intel GPU
-│   ├── gptsovits_assets/     # GPT-SoVITS pretrained models (from pretrained_models.zip)
-│   │   ├── s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt  # Step 1 v1
-│   │   ├── s1v3.ckpt                                        # Step 1 v3
-│   │   ├── s2G488k.pth                                      # Step 2 v1/v2 G
-│   │   ├── s2D488k.pth                                      # Step 2 v1/v2 D
-│   │   ├── s2Gv3.pth                                        # Step 2 v3 G
-│   │   ├── chinese-hubert-base/                             # Content encoder
-│   │   ├── chinese-roberta-wwm-ext-large/                   # Text encoder
-│   │   ├── gsv-v2final-pretrained/                          # v2 final
-│   │   ├── gsv-v4-pretrained/                               # v4
-│   │   ├── v2Pro/                                           # v2Pro
-│   │   └── sv/                                              # Speaker verification
-│   └── g2pwmodel/              # G2PW model for Chinese TTS
-│       └── g2pW.onnx
+│   └── gptsovits_assets/     # GPT-SoVITS pretrained models
+│       ├── pretrained_models/                                 # Main pretrained models (from pretrained_models.zip)
+│       │   ├── s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt  # Step 1 v1
+│       │   ├── s1v3.ckpt                                        # Step 1 v3
+│       │   ├── s2G488k.pth                                      # Step 2 v1/v2 G
+│       │   ├── s2D488k.pth                                      # Step 2 v1/v2 D
+│       │   ├── s2Gv3.pth                                        # Step 2 v3 G
+│       │   ├── chinese-hubert-base/                             # Content encoder
+│       │   ├── chinese-roberta-wwm-ext-large/                   # Text encoder
+│       │   ├── gsv-v2final-pretrained/                          # v2 final
+│       │   ├── gsv-v4-pretrained/                               # v4
+│       │   ├── v2Pro/                                           # v2Pro
+│       │   └── sv/                                              # Speaker verification
+│       └── G2PWModel/                                         # G2PW model for Chinese TTS (from G2PWModel.zip)
+│           ├── g2pW.onnx                                      # Main model file (~635MB)
+│           ├── config.py                                      # Model configuration
+│           ├── char_bopomofo_dict.json                        # Character Bopomofo dictionary
+│           ├── bopomofo_to_pinyin_wo_tune_dict.json           # Bopomofo to Pinyin mapping
+│           ├── MONOPHONIC_CHARS.txt                           # Monophonic characters list
+│           ├── POLYPHONIC_CHARS.txt                           # Polyphonic characters list
+│           ├── record.log                                     # Download record
+│           └── version                                        # Version info
 ├── Dockerfile
 ├── supervisord.conf
 └── deploy.sh

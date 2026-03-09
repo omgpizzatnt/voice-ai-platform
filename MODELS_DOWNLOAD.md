@@ -16,22 +16,28 @@
 
 ```
 models/
-├── gptsovits_assets/              # GPT-SoVITS 预训练模型 (zip 解压后重命名)
-│   ├── s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt   # Step 1 v1
-│   ├── s1v3.ckpt                                        # Step 1 v3
-│   ├── s2G488k.pth                                       # Step 2 v1/v2 G
-│   ├── s2D488k.pth                                       # Step 2 v1/v2 D
-│   ├── s2Gv3.pth                                         # Step 2 v3 G
-│   ├── chinese-hubert-base/
-│   ├── chinese-roberta-wwm-ext-large/
-│   ├── gsv-v2final-pretrained/
-│   ├── gsv-v4-pretrained/
-│   ├── v2Pro/
-│   └── sv/
-├── g2pwmodel/                     # G2PW 推理模型
-│   ├── g2pW.onnx
-│   ├── char_bopomofo_dict.json
-│   └── ...
+├── gptsovits_assets/              # GPT-SoVITS 预训练模型
+│   ├── pretrained_models/         # 主预训练模型 (zip 解压后重命名)
+│   │   ├── s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt   # Step 1 v1
+│   │   ├── s1v3.ckpt                                        # Step 1 v3
+│   │   ├── s2G488k.pth                                       # Step 2 v1/v2 G
+│   │   ├── s2D488k.pth                                       # Step 2 v1/v2 D
+│   │   ├── s2Gv3.pth                                         # Step 2 v3 G
+│   │   ├── chinese-hubert-base/
+│   │   ├── chinese-roberta-wwm-ext-large/
+│   │   ├── gsv-v2final-pretrained/
+│   │   ├── gsv-v4-pretrained/
+│   │   ├── v2Pro/
+│   │   └── sv/
+│   └── G2PWModel/                 # G2PW 推理模型 (zip 解压后重命名)
+│       ├── g2pW.onnx
+│       ├── config.py
+│       ├── char_bopomofo_dict.json
+│       ├── bopomofo_to_pinyin_wo_tune_dict.json
+│       ├── MONOPHONIC_CHARS.txt
+│       ├── POLYPHONIC_CHARS.txt
+│       ├── record.log
+│       └── version
 └── rvc_assets/                    # RVC 预训练模型
     ├── hubert/
     │   └── hubert_base.pt         # 必需
@@ -48,12 +54,12 @@ models/
 /workspace/
 ├── GPT-SoVITS/
 │   └── GPT_SoVITS/
-│       ├── pretrained_models/     # ← models/gptsovits_assets/
+│       ├── pretrained_models/     # ← models/gptsovits_assets/pretrained_models/
 │       │   ├── s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt
 │       │   ├── s2G488k.pth
 │       │   └── ...
 │       └── text/
-│           └── G2PWModel/         # ← models/g2pwmodel/
+│           └── G2PWModel/         # ← models/gptsovits_assets/G2PWModel/
 │               ├── g2pW.onnx
 │               └── ...
 └── RVC/
@@ -73,8 +79,8 @@ bash download_models.sh
 
 脚本执行流程：
 1. 下载 RVC 模型到 `models/rvc_assets/`
-2. 下载 `pretrained_models.zip` 并解压，将 `pretrained_models/` 重命名为 `models/gptsovits_assets/`
-3. 下载 `G2PWModel.zip` 并解压到 `models/g2pwmodel/`
+2. 下载 `pretrained_models.zip` 并解压到 `models/gptsovits_assets/pretrained_models/`
+3. 下载 `G2PWModel.zip` 并解压到 `models/gptsovits_assets/G2PWModel/`
 
 ## 手动下载
 
@@ -101,12 +107,12 @@ wget -O models/rvc_assets/rmvpe/rmvpe.pt \
 wget -O pretrained_models.zip \
     https://huggingface.co/XXXXRT/GPT-SoVITS-Pretrained/resolve/main/pretrained_models.zip
 
-# 解压到 models/ 目录 (会创建 pretrained_models/ 子文件夹)
-unzip -q -o pretrained_models.zip -d models/
+# 解压到 models/gptsovits_assets/ 目录
+mkdir -p models/gptsovits_assets
+unzip -q -o pretrained_models.zip -d models/gptsovits_assets/
 rm pretrained_models.zip
 
-# 重命名为 gptsovits_assets/
-mv models/pretrained_models models/gptsovits_assets
+# 结果: models/gptsovits_assets/pretrained_models/
 ```
 
 ### 3. G2PWModel (中文 TTS)
@@ -116,14 +122,12 @@ mv models/pretrained_models models/gptsovits_assets
 wget -O G2PWModel.zip \
     https://huggingface.co/XXXXRT/GPT-SoVITS-Pretrained/resolve/main/G2PWModel.zip
 
-# 解压到 models/ 目录 (会创建 G2PWModel/ 子文件夹)
-unzip -q -o G2PWModel.zip -d models/
+# 解压到 models/gptsovits_assets/ 目录
+unzip -q -o G2PWModel.zip -d models/gptsovits_assets/
 rm G2PWModel.zip
 
-# 重命名为 g2pwmodel/
-mv models/G2PWModel models/g2pwmodel
-
-# 验证: models/g2pwmodel/g2pW.onnx
+# 结果: models/gptsovits_assets/G2PWModel/
+# 验证: models/gptsovits_assets/G2PWModel/g2pW.onnx
 ```
 
 ## Step 1 & Step 2 模型说明
@@ -131,19 +135,27 @@ mv models/G2PWModel models/g2pwmodel
 ### Step 1: GPT 模型 (AR - AutoRegressive)
 - **v1**: `s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt` (~155MB)
 - **v3**: `s1v3.ckpt` (~155MB)
-- **位置**: `models/gptsovits_assets/` → 容器内 `GPT_SoVITS/pretrained_models/`
+- **位置**: `models/gptsovits_assets/pretrained_models/` → 容器内 `GPT_SoVITS/pretrained_models/`
 - **作用**: 生成语音的语义 token
 
 ### Step 2: SoVITS 模型
 - **v1/v2 Generator**: `s2G488k.pth` (~106MB)
 - **v1/v2 Discriminator**: `s2D488k.pth` (~94MB)
 - **v3 Generator**: `s2Gv3.pth` (~769MB)
-- **位置**: `models/gptsovits_assets/` → 容器内 `GPT_SoVITS/pretrained_models/`
+- **位置**: `models/gptsovits_assets/pretrained_models/` → 容器内 `GPT_SoVITS/pretrained_models/`
 - **作用**: 将语义 token 转换为音频波形
 
 ### G2PWModel (中文 TTS 推理)
-- **文件**: `g2pW.onnx` (~635MB)
-- **位置**: `models/g2pwmodel/` → 容器内 `GPT_SoVITS/text/G2PWModel/`
+- **主文件**: `g2pW.onnx` (~635MB)
+- **其他文件**:
+  - `config.py` - 模型配置
+  - `char_bopomofo_dict.json` - 字符注音词典
+  - `bopomofo_to_pinyin_wo_tune_dict.json` - 注音到拼音映射
+  - `MONOPHONIC_CHARS.txt` - 单音字列表
+  - `POLYPHONIC_CHARS.txt` - 多音字列表
+  - `record.log` - 下载记录
+  - `version` - 版本信息
+- **位置**: `models/gptsovits_assets/G2PWModel/` → 容器内 `GPT_SoVITS/text/G2PWModel/`
 - **作用**: 中文多音字推理 ( Grapheme-to-Phoneme )
 
 ## 构建前检查清单
@@ -155,14 +167,14 @@ ls -lh models/rvc_assets/rmvpe/rmvpe.pt             # 173MB (必需)
 ls -lh models/rvc_assets/rmvpe/rmvpe.onnx           # 345MB (可选)
 
 # GPT-SoVITS 模型 (约 4.5GB)
-ls -lh models/gptsovits_assets/s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt
-ls -lh models/gptsovits_assets/s2G488k.pth
-ls -lh models/gptsovits_assets/s2D488k.pth
-ls -lh models/gptsovits_assets/chinese-hubert-base/
-ls -lh models/gptsovits_assets/chinese-roberta-wwm-ext-large/
+ls -lh models/gptsovits_assets/pretrained_models/s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt
+ls -lh models/gptsovits_assets/pretrained_models/s2G488k.pth
+ls -lh models/gptsovits_assets/pretrained_models/s2D488k.pth
+ls -lh models/gptsovits_assets/pretrained_models/chinese-hubert-base/
+ls -lh models/gptsovits_assets/pretrained_models/chinese-roberta-wwm-ext-large/
 
 # G2PWModel (约 562MB)
-ls -lh models/g2pwmodel/g2pW.onnx
+ls -lh models/gptsovits_assets/G2PWModel/g2pW.onnx
 ```
 
 ## 网络问题
@@ -177,5 +189,5 @@ ls -lh models/g2pwmodel/g2pW.onnx
 
 1. **不要**将模型下载到 `GPT-SoVITS/` 或 `RVC/` submodules 中，这会导致 git 污染
 2. 所有模型统一放在 `models/` 文件夹，Dockerfile 会在构建时 COPY 到正确位置
-3. `pretrained_models.zip` 和 `G2PWModel.zip` 都包含嵌套文件夹，解压后需要重命名
+3. `pretrained_models.zip` 和 `G2PWModel.zip` 都包含嵌套文件夹，解压后会自动创建对应子目录
 4. 如果已运行过 `download_models.sh`，请勿重复下载，脚本会自动检测已存在的文件
