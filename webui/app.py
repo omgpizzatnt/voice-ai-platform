@@ -140,8 +140,8 @@ def fill_tts_paths_from_model(selected_model):
     if not selected_model:
         return "", "", ""
     base_path = f"/workspace/models/custom_voices/gptsovits/{selected_model}"
-    gpt_path = f"{base_path}/{selected_model}_gpt.ckpt"
-    sovits_path = f"{base_path}/{selected_model}_sovits.pth"
+    gpt_path = f"{base_path}/gpt.ckpt"
+    sovits_path = f"{base_path}/sovits.pth"
     ref_path = f"{base_path}/reference.wav"
     return gpt_path, sovits_path, ref_path
 
@@ -364,8 +364,8 @@ def create_rvc_tab():
 
         register_btn.click(
             register_rvc_pipeline,
-            inputs=[pipeline_id, name, base_tts_voice, rvc_model_name, pitch, f0_method, index_rate,
-                   filter_radius, resample_sr, rms_mix_rate, protect],
+            inputs=[pipeline_id, name, base_tts_voice, rvc_model_name,
+                   pitch, f0_method, index_rate, filter_radius, resample_sr, rms_mix_rate, protect],
             outputs=[status, pipelines_list]
         )
 
@@ -565,30 +565,30 @@ def upload_gptsovits_model(
 
     if not model_name.replace("_", "").replace("-", "").isalnum():
         return "Error: Model name should only contain letters, numbers, underscore and hyphen.", refresh_gptsovits_models_list()
-    
+
     model_dir = os.path.join(GPTSOVITS_MODELS_DIR, model_name)
     os.makedirs(model_dir, exist_ok=True)
-    
+
     uploaded = []
-    
+
     if gpt_file is not None:
         if hasattr(gpt_file, 'name'):
-            dest_path = os.path.join(model_dir, os.path.basename(gpt_file.name))
+            dest_path = os.path.join(model_dir, "gpt.ckpt")
             shutil.copy(gpt_file.name, dest_path)
             uploaded.append("GPT weights")
-    
+
     if sovits_file is not None:
         if hasattr(sovits_file, 'name'):
-            dest_path = os.path.join(model_dir, os.path.basename(sovits_file.name))
+            dest_path = os.path.join(model_dir, "sovits.pth")
             shutil.copy(sovits_file.name, dest_path)
             uploaded.append("SoVITS weights")
-    
+
     if ref_audio_file is not None:
         if hasattr(ref_audio_file, 'name'):
             dest_path = os.path.join(model_dir, "reference.wav")
             shutil.copy(ref_audio_file.name, dest_path)
             uploaded.append("Reference audio")
-    
+
     if uploaded:
         return f"Successfully uploaded: {', '.join(uploaded)} to '{model_name}'", refresh_gptsovits_models_list()
     else:
@@ -605,24 +605,24 @@ def upload_rvc_model(
 
     if not model_name.replace("_", "").replace("-", "").isalnum():
         return "Error: Model name should only contain letters, numbers, underscore and hyphen.", refresh_rvc_models_list()
-    
+
     model_dir = os.path.join(RVC_MODELS_DIR, model_name)
     os.makedirs(model_dir, exist_ok=True)
-    
+
     uploaded = []
-    
+
     if pth_file is not None:
         if hasattr(pth_file, 'name'):
-            dest_path = os.path.join(model_dir, os.path.basename(pth_file.name))
+            dest_path = os.path.join(model_dir, "model.pth")
             shutil.copy(pth_file.name, dest_path)
             uploaded.append("Model weights (.pth)")
-    
+
     if index_file is not None:
         if hasattr(index_file, 'name'):
-            dest_path = os.path.join(model_dir, os.path.basename(index_file.name))
+            dest_path = os.path.join(model_dir, "model.index")
             shutil.copy(index_file.name, dest_path)
             uploaded.append("Index file (.index)")
-    
+
     if uploaded:
         return f"Successfully uploaded: {', '.join(uploaded)} to '{model_name}'", refresh_rvc_models_list()
     else:

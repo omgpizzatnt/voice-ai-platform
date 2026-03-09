@@ -396,8 +396,22 @@ async def call_rvc(
     rvc_config: Dict
 ) -> bytes:
 
+    model_name = rvc_config.get('rvc_model_name', '')
+
+    model_path = f"/workspace/models/custom_voices/rvc/{model_name}/model.pth"
+    index_path = f"/workspace/models/custom_voices/rvc/{model_name}/model.index"
+
+    if not os.path.exists(model_path):
+        raise HTTPException(status_code=404, detail=f"RVC model not found: {model_path}")
+
+    if not os.path.exists(index_path):
+        index_path = ""
+
     data = aiohttp.FormData()
-    data.add_field('model_name', rvc_config.get('rvc_model_name', ''))
+    data.add_field('model_name', model_name)
+    data.add_field('model_path', model_path)
+    if index_path:
+        data.add_field('index_path', index_path)
     data.add_field('f0_up_key', str(rvc_config.get('pitch', 0)))
     data.add_field('f0_method', rvc_config.get('f0_method', 'rmvpe'))
     data.add_field('index_rate', str(rvc_config.get('index_rate', 0.75)))

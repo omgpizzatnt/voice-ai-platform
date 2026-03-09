@@ -188,9 +188,58 @@ response.stream_to_file("output.mp3")
 ## WebUI
 
 Access `http://localhost:8080` with Basic Auth credentials:
-- **Tab 1**: TTS Voice Registration
-- **Tab 2**: RVC Pipeline Configuration
-- **Tab 3**: API Key Management
+- **Tab 1**: Model Upload - Upload GPT-SoVITS and RVC models
+- **Tab 2**: TTS Voice Registration - Configure GPT-SoVITS voices
+- **Tab 3**: RVC Pipeline Configuration - Configure TTS+RVC pipelines
+- **Tab 4**: API Key Management - Generate and manage API keys
+
+## Model Management
+
+### File Naming Convention
+
+When uploading models through WebUI, files are automatically renamed to standard names:
+
+**GPT-SoVITS Models** (`/workspace/models/custom_voices/gptsovits/<model_name>/`):
+- `gpt.ckpt` - GPT weights (renamed from uploaded .ckpt file)
+- `sovits.pth` - SoVITS weights (renamed from uploaded .pth file)
+- `reference.wav` - Reference audio (renamed from uploaded .wav file)
+
+**RVC Models** (`/workspace/models/custom_voices/rvc/<model_name>/`):
+- `model.pth` - Model weights (renamed from uploaded .pth file)
+- `model.index` - Feature index (renamed from uploaded .index file, optional)
+
+### voices.yaml Configuration
+
+**GPT-SoVITS Voice:**
+```yaml
+voices:
+  my_voice:
+    name: "My Voice"
+    type: "tts"
+    version: "v2"
+    gpt_weights: "/workspace/models/custom_voices/gptsovits/my_voice/gpt.ckpt"
+    sovits_weights: "/workspace/models/custom_voices/gptsovits/my_voice/sovits.pth"
+    refer_wav_path: "/workspace/models/custom_voices/gptsovits/my_voice/reference.wav"
+    prompt_text: "Reference text here"
+    prompt_lang: "zh"
+    language: "auto"
+```
+
+**RVC Pipeline:**
+```yaml
+voices:
+  my_pipeline:
+    name: "My Pipeline"
+    type: "rvc_pipeline"
+    base_tts_voice: "default"
+    rvc_model_name: "my_rvc_model"
+    # Model paths are auto-generated:
+    # model_path: /workspace/models/custom_voices/rvc/my_rvc_model/model.pth
+    # index_path: /workspace/models/custom_voices/rvc/my_rvc_model/model.index (if exists)
+    pitch: 0
+    f0_method: "rmvpe"
+    index_rate: 0.75
+```
 
 ## Architecture
 
@@ -219,7 +268,3 @@ RunPod Container
 | `v1.0` | Minor version (auto-updated) |
 | `v1` | Major version (auto-updated) |
 | `sha-abc123` | Specific commit |
-
-## License
-
-MIT
