@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     build-essential \
     supervisor \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /workspace/venvs \
@@ -23,6 +24,13 @@ COPY deploy.sh /workspace/
 RUN chmod +x /workspace/deploy.sh
 
 COPY GPT-SoVITS/ /workspace/GPT-SoVITS/
+
+RUN mkdir -p /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/s1 \
+    /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/s2
+
+COPY models/gptsovits_assets/s1/ /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/s1/
+COPY models/gptsovits_assets/s2/ /workspace/GPT-SoVITS/GPT_SoVITS/pretrained_models/s2/
+
 RUN python -m venv /workspace/venvs/gpt-sovits --system-site-packages && \
     /workspace/venvs/gpt-sovits/bin/pip install --no-cache-dir -r /workspace/GPT-SoVITS/requirements.txt
 
