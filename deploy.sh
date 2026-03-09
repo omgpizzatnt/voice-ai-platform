@@ -20,42 +20,7 @@ fi
 
 mkdir -p /workspace/models/custom_voices
 mkdir -p /workspace/models/rvc_pipelines
-mkdir -p /workspace/GPT-SoVITS
-mkdir -p /workspace/RVC
 mkdir -p /var/log/supervisor
-
-if [ ! -f "/workspace/GPT-SoVITS/api_v2.py" ]; then
-    echo "Installing GPT-SoVITS..."
-    cd /workspace
-    
-    git clone https://github.com/RVC-Boss/GPT-SoVITS.git GPT-SoVITS-temp
-    
-    cp -r GPT-SoVITS-temp/* GPT-SoVITS/
-    rm -rf GPT-SoVITS-temp
-    
-    cd GPT-SoVITS
-    
-    pip install -r requirements.txt -q
-    
-    echo "GPT-SoVITS installed"
-fi
-
-if [ ! -f "/workspace/RVC/api.py" ]; then
-    echo "Installing RVC with FastAPI wrapper..."
-    cd /workspace
-    
-    git clone https://github.com/SocAIty/Retrieval-based-Voice-Conversion-FastAPI.git RVC-temp
-    
-    cp -r RVC-temp/* RVC/
-    rm -rf RVC-temp
-    
-    cd RVC
-    
-    pip install -r requirements.txt -q
-    pip install fastapi uvicorn python-multipart -q
-    
-    echo "RVC with FastAPI installed"
-fi
 
 if [ ! -f "/workspace/gateway/api_keys.yaml" ]; then
     echo "Initializing API keys..."

@@ -11,18 +11,10 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /workspace/gateway /workspace/webui \
+RUN mkdir -p /workspace/venvs \
     /workspace/models/custom_voices \
     /workspace/models/rvc_pipelines \
-    /workspace/GPT-SoVITS \
-    /workspace/RVC \
     /var/log/supervisor
-
-COPY gateway/requirements.txt /workspace/gateway/
-RUN pip install --no-cache-dir -r /workspace/gateway/requirements.txt
-
-COPY webui/requirements.txt /workspace/webui/
-RUN pip install --no-cache-dir -r /workspace/webui/requirements.txt
 
 COPY gateway/ /workspace/gateway/
 COPY webui/ /workspace/webui/
@@ -30,11 +22,25 @@ COPY supervisord.conf /workspace/
 COPY deploy.sh /workspace/
 RUN chmod +x /workspace/deploy.sh
 
+RUN python -m venv /workspace/venvs/gateway --system-site-packages && \
+    /workspace/venvs/gateway/bin/pip install --no-cache-dir -r /workspace/gateway/requirements.txt
+
+RUN python -m venv /workspace/venvs/webui --system-site-packages && \
+    /workspace/venvs/webui/bin/pip install --no-cache-dir -r /workspace/webui/requirements.txt
+
+RUN git clone https://github.com/RVC-Boss/GPT-SoVITS.git /workspace/GPT-SoVITS && \
+    python -m venv /workspace/venvs/gpt-sovits --system-site-packages && \
+    /workspace/venvs/gpt-sovits/bin/pip install --no-cache-dir -r /workspace/GPT-SoVITS/requirements.txt
+
+RUN git clone https://github.com/SocAIty/Retrieval-based-Voice-Conversion-FastAPI.git /workspace/RVC && \
+    python3.9 -m venv /workspace/venvs/rvc && \
+    /workspace/venvs/rvc/bin/python -m pip install pip==24.0 && \
+    /workspace/venvs/rvc/bin/pip install --no-cache-dir -r /workspace/RVC/requirements.txt
+
 ENV PYTHONUNBUFFERED=1
 ENV CUDA_VISIBLE_DEVICES=0
 ENV PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,max_split_size_mb:512
 
 EXPOSE 80 8080
-# EXPOSE 9881 9882 9883 9884 7866 7867
 
 CMD ["/workspace/deploy.sh"]
