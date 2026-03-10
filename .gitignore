@@ -102,9 +102,12 @@ temp/
 
 # Model directories (user data)
 models/custom_voices/*
-models/rvc_pipelines/*
+models/rvc_assets/*
+models/gptsovits_assets/*
+
 !models/custom_voices/.gitkeep
-!models/rvc_pipelines/.gitkeep
+!models/rvc_assets/.gitkeep
+!models/gptsovits_assets/.gitkeep
 
 # Config files with secrets (keep templates)
 gateway/api_keys.yaml
