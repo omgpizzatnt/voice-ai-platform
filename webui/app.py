@@ -7,12 +7,12 @@ import gradio as gr
 from datetime import datetime
 from typing import Dict, List, Tuple
 
-sys.path.insert(0, '/workspace/gateway')
+sys.path.insert(0, '/app/gateway')
 from yaml_utils import AtomicYAML
 
-VOICES_CONFIG_PATH = "/workspace/gateway/voices.yaml"
-API_KEYS_PATH = "/workspace/gateway/api_keys.yaml"
-MODELS_DIR = "/workspace/models"
+VOICES_CONFIG_PATH = "/app/gateway/voices.yaml"
+API_KEYS_PATH = "/app/gateway/api_keys.yaml"
+MODELS_DIR = "/app/models"
 CUSTOM_VOICES_DIR = f"{MODELS_DIR}/custom_voices"
 GPTSOVITS_MODELS_DIR = f"{CUSTOM_VOICES_DIR}/gptsovits"
 RVC_MODELS_DIR = f"{CUSTOM_VOICES_DIR}/rvc"
@@ -139,7 +139,7 @@ def delete_voice(voice_id: str):
 def fill_tts_paths_from_model(selected_model):
     if not selected_model:
         return "", "", ""
-    base_path = f"/workspace/models/custom_voices/gptsovits/{selected_model}"
+    base_path = f"/app/models/custom_voices/gptsovits/{selected_model}"
     gpt_path = f"{base_path}/gpt.ckpt"
     sovits_path = f"{base_path}/sovits.pth"
     ref_path = f"{base_path}/reference.wav"
@@ -169,15 +169,15 @@ def create_tts_tab():
 
                 gpt_weights = gr.Textbox(
                     label="GPT Weights Path (Optional)",
-                    placeholder="/workspace/models/custom_voices/gptsovits/<voice_id>/xxx.ckpt"
+                    placeholder="/app/models/custom_voices/gptsovits/<voice_id>/xxx.ckpt"
                 )
                 sovits_weights = gr.Textbox(
                     label="SoVITS Weights Path (Optional)",
-                    placeholder="/workspace/models/custom_voices/gptsovits/<voice_id>/xxx.pth"
+                    placeholder="/app/models/custom_voices/gptsovits/<voice_id>/xxx.pth"
                 )
                 refer_wav_path = gr.Textbox(
                     label="Reference WAV Path *",
-                    placeholder="/workspace/models/custom_voices/gptsovits/<voice_id>/reference.wav"
+                    placeholder="/app/models/custom_voices/gptsovits/<voice_id>/reference.wav"
                 )
 
             with gr.Column(scale=1):
@@ -308,7 +308,7 @@ def fill_rvc_model_name(selected_model):
 def create_rvc_tab():
     with gr.Tab("RVC Pipeline Config"):
         gr.Markdown("### Configure TTS+RVC Voice Conversion Pipelines")
-        gr.Markdown("Models should be in /workspace/models/custom_voices/rvc/<model_name>/")
+        gr.Markdown("Models should be in /app/models/custom_voices/rvc/<model_name>/")
 
         with gr.Row():
             with gr.Column(scale=1):
@@ -328,7 +328,7 @@ def create_rvc_tab():
 
                 rvc_model_name = gr.Textbox(
                     label="RVC Model Name *",
-                    placeholder="Folder name in /workspace/models/custom_voices/rvc/"
+                    placeholder="Folder name in /app/models/custom_voices/rvc/"
                 )
 
             with gr.Column(scale=1):
@@ -673,8 +673,8 @@ def create_model_upload_tab():
     with gr.Tab("Model Upload"):
         gr.Markdown("Upload and Manage Models")
         gr.Markdown("Models will be stored in:")
-        gr.Markdown("- GPT-SoVITS: /workspace/models/custom_voices/gptsovits/")
-        gr.Markdown("- RVC: /workspace/models/custom_voices/rvc/")
+        gr.Markdown("- GPT-SoVITS: /app/models/custom_voices/gptsovits/")
+        gr.Markdown("- RVC: /app/models/custom_voices/rvc/")
 
         with gr.Row():
             with gr.Column(scale=1):

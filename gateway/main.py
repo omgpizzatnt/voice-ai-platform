@@ -28,8 +28,8 @@ GPT_SOVITS_BASE_URL = "http://localhost"
 GPT_SOVITS_PORTS = [9881, 9882, 9883, 9884]
 RVC_BASE_URL = "http://localhost"
 RVC_PORTS = [7866, 7867]
-VOICES_CONFIG_PATH = "/workspace/gateway/voices.yaml"
-API_KEYS_PATH = "/workspace/gateway/api_keys.yaml"
+VOICES_CONFIG_PATH = "/app/gateway/voices.yaml"
+API_KEYS_PATH = "/app/gateway/api_keys.yaml"
 CONFIG_RELOAD_INTERVAL = 5
 
 langid.set_languages(['en', 'zh', 'ja', 'ko'])
@@ -398,8 +398,8 @@ async def call_rvc(
 
     model_name = rvc_config.get('rvc_model_name', '')
 
-    model_path = f"/workspace/models/custom_voices/rvc/{model_name}/model.pth"
-    index_path = f"/workspace/models/custom_voices/rvc/{model_name}/model.index"
+    model_path = f"/app/models/custom_voices/rvc/{model_name}/model.pth"
+    index_path = f"/app/models/custom_voices/rvc/{model_name}/model.index"
 
     if not os.path.exists(model_path):
         raise HTTPException(status_code=404, detail=f"RVC model not found: {model_path}")

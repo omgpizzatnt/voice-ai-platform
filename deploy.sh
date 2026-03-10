@@ -18,19 +18,59 @@ if [ -z "$WEBUI_PASS" ]; then
     export WEBUI_PASS="admin"
 fi
 
-mkdir -p /workspace/models/custom_voices/gptsovits
-mkdir -p /workspace/models/custom_voices/rvc
+# ============================================
+# Setup persistent data directory structure in /workspace
+# ============================================
+echo "Setting up persistent data directories..."
+
+# Create persistent data directories (these will survive pod restarts)
+mkdir -p /workspace/data/models/custom_voices/gptsovits
+mkdir -p /workspace/data/models/custom_voices/rvc
+mkdir -p /workspace/data/configs
 mkdir -p /var/log/supervisor
 
-if [ ! -f "/workspace/gateway/api_keys.yaml" ]; then
+# ============================================
+# Create symbolic links from /app to persistent data
+# ============================================
+echo "Creating symbolic links..."
+
+# Link models directory
+if [ -e "/app/models/custom_voices" ] && [ ! -L "/app/models/custom_voices" ]; then
+    rm -rf /app/models/custom_voices
+fi
+if [ ! -L "/app/models/custom_voices" ]; then
+    ln -s /workspace/data/models/custom_voices /app/models/custom_voices
+fi
+
+# Link config files
+if [ -f "/app/gateway/voices.yaml" ] && [ ! -L "/app/gateway/voices.yaml" ]; then
+    rm -f /app/gateway/voices.yaml
+fi
+if [ ! -L "/app/gateway/voices.yaml" ]; then
+    ln -s /workspace/data/configs/voices.yaml /app/gateway/voices.yaml
+fi
+
+if [ -f "/app/gateway/api_keys.yaml" ] && [ ! -L "/app/gateway/api_keys.yaml" ]; then
+    rm -f /app/gateway/api_keys.yaml
+fi
+if [ ! -L "/app/gateway/api_keys.yaml" ]; then
+    ln -s /workspace/data/configs/api_keys.yaml /app/gateway/api_keys.yaml
+fi
+
+echo "Symbolic links created successfully."
+
+# ============================================
+# Initialize configuration files if they don't exist
+# ============================================
+
+if [ ! -f "/workspace/data/configs/api_keys.yaml" ]; then
     echo "Initializing API keys..."
-    mkdir -p /workspace/gateway
     
     # Use Python for cross-platform hash generation instead of sha256sum
     KEY_HASH=$(python3 -c "import hashlib; print(hashlib.sha256('$API_KEY'.encode()).hexdigest()[:16])")
     CREATED_AT=$(python3 -c "from datetime import datetime, timezone; print(datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'))")
     
-    cat > /workspace/gateway/api_keys.yaml << EOF
+    cat > /workspace/data/configs/api_keys.yaml << EOF
 api_keys:
   ${KEY_HASH}:
     key_hash: "${KEY_HASH}"
@@ -40,9 +80,9 @@ api_keys:
 EOF
 fi
 
-if [ ! -f "/workspace/gateway/voices.yaml" ]; then
+if [ ! -f "/workspace/data/configs/voices.yaml" ]; then
     echo "Initializing voices config..."
-    cat > /workspace/gateway/voices.yaml << 'EOF'
+    cat > /workspace/data/configs/voices.yaml << 'EOF'
 voices:
   default:
     name: "Default Voice"
@@ -50,7 +90,7 @@ voices:
     version: "v2"
     gpt_weights: ""
     sovits_weights: ""
-    refer_wav_path: "/workspace/models/custom_voices/gptsovits/default/reference.wav"
+    refer_wav_path: "/workspace/data/models/custom_voices/gptsovits/default/reference.wav"
     prompt_text: "参考音频对应的文本内容"
     prompt_lang: "zh"
     language: "auto"
@@ -64,15 +104,16 @@ voices:
 EOF
 fi
 
-if [ ! -d "/workspace/models/custom_voices/gptsovits/default" ]; then
-    mkdir -p /workspace/models/custom_voices/gptsovits/default
-    echo "Please upload reference.wav to /workspace/models/custom_voices/gptsovits/default/"
+if [ ! -d "/workspace/data/models/custom_voices/gptsovits/default" ]; then
+    mkdir -p /workspace/data/models/custom_voices/gptsovits/default
+    echo "Please upload reference.wav to /workspace/data/models/custom_voices/gptsovits/default/"
 fi
 
 echo ""
 echo "Setup complete!"
+echo "Persistent data location: /workspace/data/"
 echo ""
 echo "Starting all services with Supervisor..."
 echo ""
 
-exec supervisord -c /workspace/supervisord.conf
+exec supervisord -c /app/supervisord.conf
