@@ -35,8 +35,23 @@ COPY models/gptsovits_assets/pretrained_models/ /app/GPT-SoVITS/GPT_SoVITS/pretr
 COPY models/gptsovits_assets/G2PWModel/ /app/GPT-SoVITS/GPT_SoVITS/text/G2PWModel/
 COPY models/rvc_assets/ /app/RVC/assets/
 
-RUN python -m venv /app/venvs/gpt-sovits --system-site-packages && \
-    /app/venvs/gpt-sovits/bin/pip install --no-cache-dir -r /app/GPT-SoVITS/requirements.txt
+# GPT-SoVITS venv with retry logic for network issues
+# Pre-install build dependencies to avoid timeouts during pyopenjtalk build
+RUN python -m venv /app/venvs/gpt-sovits --system-site-packages
+
+# Configure pip with longer timeout and retry settings
+ENV PIP_DEFAULT_TIMEOUT=300
+ENV PIP_RETRY_ATTEMPTS=5
+
+# Pre-install build dependencies that pyopenjtalk needs (to avoid timeout during build)
+RUN /app/venvs/gpt-sovits/bin/pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    /app/venvs/gpt-sovits/bin/pip install --no-cache-dir numpy==1.26.4 cython cmake
+
+# Install GPT-SoVITS requirements with retry logic
+RUN for i in 1 2 3; do \
+        /app/venvs/gpt-sovits/bin/pip install --no-cache-dir -r /app/GPT-SoVITS/requirements.txt && break || \
+        (echo "Attempt $i failed, retrying in 10 seconds..." && sleep 10); \
+    done
 
 RUN python3.9 -m venv /app/venvs/rvc && \
     /app/venvs/rvc/bin/python -m pip install pip==24.0 && \
