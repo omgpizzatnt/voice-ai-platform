@@ -390,7 +390,7 @@ def refresh_api_keys_list():
         status = "[Active]" if key_info.get("active", True) else "[Revoked]"
         created = key_info.get("created_at", "Unknown")[:10]
         last_used = key_info.get("last_used", "Never")
-        if last_used != "Never":
+        if last_used and last_used != "Never":
             last_used = last_used[:10]
         lines.append(f"{status} **{key_hash[:8]}...** | Created: {created} | Last Used: {last_used}")
     
@@ -775,7 +775,7 @@ def create_app():
     def auth(username, password):
         return username == WEBUI_USER and password == WEBUI_PASS
     
-    with gr.Blocks(title="Voice AI Platform - Model Manager", theme=gr.themes.Soft()) as app:
+    with gr.Blocks(title="Voice AI Platform - Model Manager") as app:
         gr.Markdown("""
         # Voice AI Platform - Model Manager
         
@@ -805,6 +805,7 @@ if __name__ == "__main__":
     app.launch(
         server_name="0.0.0.0",
         server_port=8080,
+        theme=gr.themes.Soft(),
         auth=lambda u, p: u == WEBUI_USER and p == WEBUI_PASS,
         auth_message="Voice AI Platform - Admin Login",
         show_error=True
